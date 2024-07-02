@@ -3,6 +3,7 @@ from pygments import highlight
 from pygments.formatters.html import HtmlFormatter  
 from pygments.lexers import get_all_lexers, get_lexer_by_name  
 from pygments.styles import get_all_styles
+from django.contrib.auth.models import User
 
 LEXERS = [item for item in get_all_lexers() if item[1]]
 LANGUAGE_CHOICES = sorted([(item[1][0], item[0]) for item in LEXERS])
@@ -42,3 +43,28 @@ class Snippet(models.Model):
 
     def __str__(self):
         return self.title
+
+class APIAction(models.Model):
+    ACTION_CHOICES = (
+        ('create', 'Create'),
+        ('update', 'Update'),
+        ('destroy', 'Destroy'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    model_name = models.CharField(max_length=100)
+    model_id = models.PositiveIntegerField()
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f'{self.user.username} - {self.model_name} {self.action}'
+
+    @classmethod
+    def log_action(cls, user, model_name, model_id, action):
+        cls.objects.create(user=user, model_name=model_name, model_id=model_id, action=action)
+
+
